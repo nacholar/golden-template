@@ -1,17 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Diamond, Check } from "lucide-react";
-import { api } from "@/lib/api";
-
-interface Subscription {
-  id: string;
-  tier: string;
-  status: string;
-  paymentProvider: string;
-  currentPeriodEnd: string | null;
-}
+import { useSubscription } from "@/hooks/use-subscription";
 
 const tiers = [
   {
@@ -55,29 +47,20 @@ const statusBadge: Record<string, { className: string; label: string }> = {
 };
 
 export default function BillingPage() {
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const { subscription, loading, error, checkout } = useSubscription();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    api
-      .get<Subscription>("/api/subscriptions/me")
-      .then(setSubscription)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
 
   const currentTier = subscription?.tier ?? "free";
   const badge = statusBadge[subscription?.status ?? "active"] ?? statusBadge.active;
 
   const handleUpgrade = async (tier: string) => {
+    setUpgradeError(null);
     try {
-      const { url } = await api.post<{ url: string }>("/api/subscriptions/checkout", {
-        tier,
-      });
+      const url = await checkout(tier);
       window.location.href = url;
-    } catch {
-      // handle error
+    } catch (err) {
+      setUpgradeError(err instanceof Error ? err.message : "Failed to start checkout");
     }
   };
 
@@ -85,7 +68,17 @@ export default function BillingPage() {
     return (
       <>
         <PageHeader title="Billing" />
-        <div className="text-slate-400 text-center py-12">Loading...</div>
+        <div className="space-y-6 animate-pulse">
+          <div className="bg-slate-900 rounded-xl border border-slate-700 p-6">
+            <div className="h-6 bg-slate-800 rounded w-48 mb-4" />
+            <div className="h-4 bg-slate-800 rounded w-32" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-slate-900 rounded-xl border border-slate-700 p-6 h-64" />
+            ))}
+          </div>
+        </div>
       </>
     );
   }
@@ -93,6 +86,12 @@ export default function BillingPage() {
   return (
     <>
       <PageHeader title="Billing" />
+
+      {(error || upgradeError) && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6 text-red-400 text-sm">
+          {upgradeError || error}
+        </div>
+      )}
 
       {/* Current Plan Card */}
       <div className="bg-slate-900 rounded-xl border border-slate-700 p-6 mb-8">

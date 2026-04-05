@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,73 +19,31 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Key, ShieldAlert, Copy, Check, Plus } from "lucide-react";
-import { api } from "@/lib/api";
-
-interface ApiKeyItem {
-  id: string;
-  name: string;
-  keyPrefix: string;
-  expiresAt: string | null;
-  lastUsedAt: string | null;
-  revokedAt: string | null;
-  createdAt: string;
-}
-
-interface CreatedKey {
-  id: string;
-  name: string;
-  key: string;
-  keyPrefix: string;
-}
-
-function timeAgo(dateStr: string | null): string {
-  if (!dateStr) return "never";
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
+import { useApiKeys } from "@/hooks/use-api-keys";
+import { timeAgo } from "@/lib/utils";
+import type { CreatedKey } from "@/lib/types";
 
 export default function KeysPage() {
-  const [keys, setKeys] = useState<ApiKeyItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { keys, loading, error, createKey, revokeKey } = useApiKeys();
   const [createOpen, setCreateOpen] = useState(false);
   const [createdKey, setCreatedKey] = useState<CreatedKey | null>(null);
   const [revokeId, setRevokeId] = useState<string | null>(null);
   const [newKeyName, setNewKeyName] = useState("");
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(false);
-
-  const fetchKeys = async () => {
-    try {
-      const data = await api.get<ApiKeyItem[]>("/api/api-keys");
-      setKeys(data.filter((k) => !k.revokedAt));
-    } catch {
-      // handle error silently
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchKeys();
-  }, []);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const handleCreate = async () => {
     if (!newKeyName.trim()) return;
     setCreating(true);
+    setActionError(null);
     try {
-      const result = await api.post<CreatedKey>("/api/api-keys", { name: newKeyName });
+      const result = await createKey(newKeyName);
       setCreatedKey(result);
       setCreateOpen(false);
       setNewKeyName("");
-      fetchKeys();
-    } catch {
-      // handle error
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Failed to create key");
     } finally {
       setCreating(false);
     }
@@ -93,12 +51,12 @@ export default function KeysPage() {
 
   const handleRevoke = async () => {
     if (!revokeId) return;
+    setActionError(null);
     try {
-      await api.delete(`/api/api-keys/${revokeId}`);
+      await revokeKey(revokeId);
       setRevokeId(null);
-      fetchKeys();
-    } catch {
-      // handle error
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Failed to revoke key");
     }
   };
 
@@ -109,8 +67,6 @@ export default function KeysPage() {
       setTimeout(() => setCopied(false), 2000);
     }
   };
-
-  const activeKeys = keys;
 
   return (
     <>
@@ -133,9 +89,19 @@ export default function KeysPage() {
         </p>
       </div>
 
+      {(error || actionError) && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6 text-red-400 text-sm">
+          {actionError || error}
+        </div>
+      )}
+
       {loading ? (
-        <div className="text-slate-400 text-center py-12">Loading...</div>
-      ) : activeKeys.length === 0 ? (
+        <div className="bg-slate-900 rounded-xl border border-slate-700 p-6 space-y-4 animate-pulse">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-10 bg-slate-800 rounded" />
+          ))}
+        </div>
+      ) : keys.length === 0 ? (
         <div className="bg-slate-900 rounded-xl border border-slate-700 p-12 text-center">
           <Key className="w-10 h-10 text-slate-600 mx-auto mb-3" />
           <p className="text-white font-medium">No API keys yet</p>
@@ -163,7 +129,7 @@ export default function KeysPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {activeKeys.map((key) => (
+              {keys.map((key) => (
                 <TableRow key={key.id} className="border-slate-700">
                   <TableCell className="text-white font-medium">
                     {key.name}
