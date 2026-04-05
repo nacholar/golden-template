@@ -1,3 +1,4 @@
+import { z } from "@hono/zod-openapi";
 import * as HttpStatusPhrases from "stoker/http-status-phrases";
 import { createMessageObjectSchema } from "stoker/openapi/schemas";
 
@@ -13,3 +14,10 @@ export const ZOD_ERROR_CODES = {
 };
 
 export const notFoundSchema = createMessageObjectSchema(HttpStatusPhrases.NOT_FOUND);
+
+export const unauthorizedSchema = z.object({
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+  }),
+}).openapi({ example: { error: { code: "UNAUTHORIZED", message: "Not authenticated" } } });

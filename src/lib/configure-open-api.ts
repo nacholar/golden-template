@@ -14,6 +14,13 @@ export default function configureOpenAPI(app: AppOpenAPI) {
     },
   });
 
+  // Register bearer auth security scheme
+  app.openAPIRegistry.registerComponent("securitySchemes", "bearerAuth", {
+    type: "http",
+    scheme: "bearer",
+    description: "Session cookie or API key",
+  });
+
   app.get(
     "/reference",
     apiReference({

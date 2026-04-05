@@ -3,6 +3,7 @@ import * as HttpStatusCodes from "stoker/http-status-codes";
 import { jsonContent, jsonContentRequired } from "stoker/openapi/helpers";
 
 import { subscriptionResponseSchema } from "@/db/schema";
+import { unauthorizedSchema } from "@/lib/constants";
 
 const tags = ["Subscriptions"];
 
@@ -17,7 +18,7 @@ export const getCurrent = createRoute({
       "Current subscription for the authenticated user",
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ message: z.string() }),
+      unauthorizedSchema,
       "Not authenticated",
     ),
   },
@@ -44,7 +45,7 @@ export const createCheckout = createRoute({
       "LemonSqueezy Checkout session URL",
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ message: z.string() }),
+      unauthorizedSchema,
       "Not authenticated",
     ),
   },

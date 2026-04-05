@@ -4,7 +4,7 @@ import { jsonContent, jsonContentRequired } from "stoker/openapi/helpers";
 import { createErrorSchema } from "stoker/openapi/schemas";
 
 import { apiKeyCreatedResponseSchema, apiKeyResponseSchema, insertApiKeysSchema } from "@/db/schema";
-import { notFoundSchema } from "@/lib/constants";
+import { notFoundSchema, unauthorizedSchema } from "@/lib/constants";
 
 const tags = ["API Keys"];
 
@@ -19,7 +19,7 @@ export const list = createRoute({
       "List of API keys for the authenticated user",
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ message: z.string() }),
+      unauthorizedSchema,
       "Not authenticated",
     ),
   },
@@ -45,7 +45,7 @@ export const create = createRoute({
       "The created API key (key shown only once)",
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ message: z.string() }),
+      unauthorizedSchema,
       "Not authenticated",
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
@@ -73,7 +73,7 @@ export const revoke = createRoute({
       "API key not found",
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ message: z.string() }),
+      unauthorizedSchema,
       "Not authenticated",
     ),
   },

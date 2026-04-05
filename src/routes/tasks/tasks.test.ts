@@ -164,7 +164,7 @@ describe("webhooks routes", () => {
     }, getMockEnv());
     expect(res.status).toBe(400);
     const json = await res.json();
-    expect(json.message).toBe("Missing x-signature header");
+    expect(json.error.message).toBe("Missing x-signature header");
   });
 
   it("POST /api/webhooks/lemonsqueezy returns 400 with invalid signature", async () => {
@@ -175,7 +175,7 @@ describe("webhooks routes", () => {
     }, getMockEnv());
     expect(res.status).toBe(400);
     const json = await res.json();
-    expect(json.message).toBe("Invalid webhook signature");
+    expect(json.error.message).toBe("Invalid webhook signature");
   });
 
   it("POST /api/webhooks/lemonsqueezy returns 400 with empty signature", async () => {

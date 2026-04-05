@@ -1,16 +1,17 @@
 import { eq } from "drizzle-orm";
-import type { Context } from "hono";
 import * as HttpStatusCodes from "stoker/http-status-codes";
 
-import { createDb } from "@/db";
 import { subscriptions } from "@/db/schema";
+import { BadRequestError } from "@/lib/errors";
 import { LemonSqueezyPaymentProvider } from "@/lib/payment/lemonsqueezy";
-import type { AppBindings } from "@/lib/types";
+import type { AppRouteHandler } from "@/lib/types";
 
-export const lemonsqueezyWebhook = async (c: Context<AppBindings>) => {
+import type { LemonSqueezyWebhookRoute } from "./lemonsqueezy.routes";
+
+export const lemonsqueezyWebhook: AppRouteHandler<LemonSqueezyWebhookRoute> = async (c) => {
   const signature = c.req.header("x-signature");
   if (!signature) {
-    return c.json({ message: "Missing x-signature header" }, HttpStatusCodes.BAD_REQUEST);
+    throw new BadRequestError("Missing x-signature header");
   }
 
   const body = await c.req.text();
@@ -25,10 +26,13 @@ export const lemonsqueezyWebhook = async (c: Context<AppBindings>) => {
     event = await provider.verifyWebhookSignature(body, signature);
   }
   catch {
-    return c.json({ message: "Invalid webhook signature" }, HttpStatusCodes.BAD_REQUEST);
+    throw new BadRequestError("Invalid webhook signature");
   }
 
-  const db = createDb(c.env.DB);
+  const db = c.get("db");
+  const logger = c.get("logger");
+
+  logger.info({ eventType: event.type, subscriptionId: event.subscriptionId }, "Processing webhook event");
 
   switch (event.type) {
     case "subscription_created": {

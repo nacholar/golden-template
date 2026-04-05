@@ -111,8 +111,7 @@ export const insertTasksSchema = toZodV4SchemaTyped(createInsertSchema(
   tasks,
   { name: field => field.min(1).max(500) },
 ).required({ done: true }).omit({ id: true, createdAt: true, updatedAt: true }));
-// @ts-expect-error partial exists on zod v4 type
-export const patchTasksSchema = insertTasksSchema.partial();
+export const patchTasksSchema = (insertTasksSchema as any).partial() as typeof insertTasksSchema;
 
 // API Keys
 export const selectApiKeysSchema = toZodV4SchemaTyped(createSelectSchema(apiKeys));

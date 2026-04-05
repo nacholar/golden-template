@@ -1,24 +1,14 @@
-import type { Context } from "hono";
 import * as HttpStatusCodes from "stoker/http-status-codes";
 
-import { createDb } from "@/db";
-import { createAuth } from "@/lib/auth";
 import { LemonSqueezyPaymentProvider } from "@/lib/payment/lemonsqueezy";
-import type { AppBindings } from "@/lib/types";
+import type { AppRouteHandler } from "@/lib/types";
 
-async function getSessionUser(c: Context<AppBindings>) {
-  const auth = createAuth(c.env);
-  const session = await auth.api.getSession({ headers: c.req.raw.headers });
-  return session?.user ?? null;
-}
+import type { CreateCheckoutRoute, GetCurrentRoute } from "./subscriptions.routes";
 
-export const getCurrent = async (c: Context<AppBindings>) => {
-  const user = await getSessionUser(c);
-  if (!user) {
-    return c.json({ message: "Not authenticated" }, HttpStatusCodes.UNAUTHORIZED);
-  }
+export const getCurrent: AppRouteHandler<GetCurrentRoute> = async (c) => {
+  const user = c.get("user");
+  const db = c.get("db");
 
-  const db = createDb(c.env.DB);
   const sub = await db.query.subscriptions.findFirst({
     where: (fields, ops) => ops.eq(fields.userId, user.id),
   });
@@ -42,13 +32,10 @@ export const getCurrent = async (c: Context<AppBindings>) => {
   }, HttpStatusCodes.OK);
 };
 
-export const createCheckout = async (c: Context<AppBindings>) => {
-  const user = await getSessionUser(c);
-  if (!user) {
-    return c.json({ message: "Not authenticated" }, HttpStatusCodes.UNAUTHORIZED);
-  }
+export const createCheckout: AppRouteHandler<CreateCheckoutRoute> = async (c) => {
+  const user = c.get("user");
+  const body = c.req.valid("json");
 
-  const body = await c.req.json<{ priceId: string; successUrl: string; cancelUrl: string }>();
   const provider = new LemonSqueezyPaymentProvider(
     c.env.LEMONSQUEEZY_API_KEY,
     c.env.LEMONSQUEEZY_STORE_ID,

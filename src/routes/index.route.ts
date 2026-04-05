@@ -1,4 +1,4 @@
-import { createRoute } from "@hono/zod-openapi";
+import { createRoute, z } from "@hono/zod-openapi";
 import * as HttpStatusCodes from "stoker/http-status-codes";
 import { jsonContent } from "stoker/openapi/helpers";
 import { createMessageObjectSchema } from "stoker/openapi/schemas";
@@ -21,6 +21,28 @@ const router = createRouter()
     (c) => {
       return c.json({
         message: "Golden Template API on Cloudflare",
+      }, HttpStatusCodes.OK);
+    },
+  )
+  .openapi(
+    createRoute({
+      tags: ["Index"],
+      method: "get",
+      path: "/health",
+      responses: {
+        [HttpStatusCodes.OK]: jsonContent(
+          z.object({
+            status: z.string(),
+            timestamp: z.string(),
+          }),
+          "Health check response",
+        ),
+      },
+    }),
+    (c) => {
+      return c.json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
       }, HttpStatusCodes.OK);
     },
   );

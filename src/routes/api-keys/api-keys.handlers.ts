@@ -1,19 +1,11 @@
 import { eq } from "drizzle-orm";
-import type { Context } from "hono";
 import * as HttpStatusCodes from "stoker/http-status-codes";
 
-import { createDb } from "@/db";
 import { apiKeys } from "@/db/schema";
-import { createAuth } from "@/lib/auth";
-import type { AppBindings } from "@/lib/types";
+import { NotFoundError } from "@/lib/errors";
+import type { AppRouteHandler } from "@/lib/types";
 
 import type { CreateRoute, ListRoute, RevokeRoute } from "./api-keys.routes";
-
-async function getSessionUser(c: Context<AppBindings>) {
-  const auth = createAuth(c.env);
-  const session = await auth.api.getSession({ headers: c.req.raw.headers });
-  return session?.user ?? null;
-}
 
 function generateApiKey(): string {
   const bytes = new Uint8Array(32);
@@ -29,13 +21,10 @@ async function hashKey(key: string): Promise<string> {
     .join("");
 }
 
-export const list = async (c: Context<AppBindings>) => {
-  const user = await getSessionUser(c);
-  if (!user) {
-    return c.json({ message: "Not authenticated" }, HttpStatusCodes.UNAUTHORIZED);
-  }
+export const list: AppRouteHandler<ListRoute> = async (c) => {
+  const user = c.get("user");
+  const db = c.get("db");
 
-  const db = createDb(c.env.DB);
   const keys = await db.query.apiKeys.findMany({
     where: (fields, ops) => ops.and(
       ops.eq(fields.userId, user.id),
@@ -54,18 +43,15 @@ export const list = async (c: Context<AppBindings>) => {
   })), HttpStatusCodes.OK);
 };
 
-export const create = async (c: Context<AppBindings>) => {
-  const user = await getSessionUser(c);
-  if (!user) {
-    return c.json({ message: "Not authenticated" }, HttpStatusCodes.UNAUTHORIZED);
-  }
+export const create: AppRouteHandler<CreateRoute> = async (c) => {
+  const user = c.get("user");
+  const db = c.get("db");
+  const body = c.req.valid("json");
 
-  const body = await c.req.json<{ name: string; expiresAt?: string }>();
   const rawKey = generateApiKey();
   const keyHash = await hashKey(rawKey);
   const keyPrefix = rawKey.slice(0, 10);
 
-  const db = createDb(c.env.DB);
   const [created] = await db.insert(apiKeys).values({
     userId: user.id,
     name: body.name,
@@ -84,24 +70,26 @@ export const create = async (c: Context<AppBindings>) => {
   }, HttpStatusCodes.OK);
 };
 
-export const revoke = async (c: Context<AppBindings>) => {
-  const user = await getSessionUser(c);
-  if (!user) {
-    return c.json({ message: "Not authenticated" }, HttpStatusCodes.UNAUTHORIZED);
+export const revoke: AppRouteHandler<RevokeRoute> = async (c) => {
+  const user = c.get("user");
+  const db = c.get("db");
+  const { id } = c.req.valid("param");
+
+  const existing = await db.query.apiKeys.findFirst({
+    where: (fields, ops) => ops.and(
+      ops.eq(fields.id, id),
+      ops.eq(fields.userId, user.id),
+      ops.isNull(fields.revokedAt),
+    ),
+  });
+
+  if (!existing) {
+    throw new NotFoundError("API key", id);
   }
 
-  const idParam = c.req.param("id");
-  const id = Number(idParam);
-  const db = createDb(c.env.DB);
-
-  const [updated] = await db.update(apiKeys)
+  await db.update(apiKeys)
     .set({ revokedAt: new Date() })
-    .where(eq(apiKeys.id, id))
-    .returning();
-
-  if (!updated || updated.userId !== user.id) {
-    return c.json({ message: "Not Found" }, HttpStatusCodes.NOT_FOUND);
-  }
+    .where(eq(apiKeys.id, id));
 
   return c.json({ message: "API key revoked" }, HttpStatusCodes.OK);
 };

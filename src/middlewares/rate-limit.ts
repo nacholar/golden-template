@@ -1,10 +1,10 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { eq, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { MiddlewareHandler } from "hono";
 
-import { createDb } from "@/db";
 import { apiKeys } from "@/db/schema";
+import { UnauthorizedError } from "@/lib/errors";
 import type { AppBindings } from "@/lib/types";
 
 export function rateLimitByApiKey(opts: {
@@ -14,7 +14,7 @@ export function rateLimitByApiKey(opts: {
   return async (c, next) => {
     const authHeader = c.req.header("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return c.json({ message: "Missing or invalid Authorization header" }, 401);
+      throw new UnauthorizedError("Missing or invalid Authorization header");
     }
 
     const rawKey = authHeader.slice(7);
@@ -28,7 +28,7 @@ export function rateLimitByApiKey(opts: {
       .join("");
 
     // Verify API key exists and is not revoked
-    const db = createDb(c.env.DB);
+    const db = c.get("db");
     const apiKey = await db.query.apiKeys.findFirst({
       where: (fields, ops) => ops.and(
         ops.eq(fields.keyHash, keyHash),
@@ -37,11 +37,11 @@ export function rateLimitByApiKey(opts: {
     });
 
     if (!apiKey) {
-      return c.json({ message: "Invalid API key" }, 401);
+      throw new UnauthorizedError("Invalid API key");
     }
 
     if (apiKey.expiresAt && apiKey.expiresAt < new Date()) {
-      return c.json({ message: "API key expired" }, 401);
+      throw new UnauthorizedError("API key expired");
     }
 
     // Update lastUsedAt
@@ -65,7 +65,12 @@ export function rateLimitByApiKey(opts: {
     c.header("X-RateLimit-Reset", String(reset));
 
     if (!success) {
-      return c.json({ message: "Rate limit exceeded" }, 429);
+      return c.json({
+        error: {
+          code: "RATE_LIMIT_EXCEEDED",
+          message: "Rate limit exceeded",
+        },
+      }, 429);
     }
 
     await next();
