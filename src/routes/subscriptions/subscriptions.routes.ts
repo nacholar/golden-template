@@ -41,7 +41,7 @@ export const createCheckout = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       z.object({ url: z.string().url() }),
-      "Stripe Checkout session URL",
+      "LemonSqueezy Checkout session URL",
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
       z.object({ message: z.string() }),

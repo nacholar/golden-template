@@ -3,7 +3,7 @@ import * as HttpStatusCodes from "stoker/http-status-codes";
 
 import { createDb } from "@/db";
 import { createAuth } from "@/lib/auth";
-import { StripePaymentProvider } from "@/lib/payment/stripe";
+import { LemonSqueezyPaymentProvider } from "@/lib/payment/lemonsqueezy";
 import type { AppBindings } from "@/lib/types";
 
 async function getSessionUser(c: Context<AppBindings>) {
@@ -49,9 +49,13 @@ export const createCheckout = async (c: Context<AppBindings>) => {
   }
 
   const body = await c.req.json<{ priceId: string; successUrl: string; cancelUrl: string }>();
-  const stripe = new StripePaymentProvider(c.env.STRIPE_SECRET_KEY, c.env.STRIPE_WEBHOOK_SECRET);
+  const provider = new LemonSqueezyPaymentProvider(
+    c.env.LEMONSQUEEZY_API_KEY,
+    c.env.LEMONSQUEEZY_STORE_ID,
+    c.env.LEMONSQUEEZY_WEBHOOK_SECRET,
+  );
 
-  const { url } = await stripe.createCheckoutSession({
+  const { url } = await provider.createCheckoutSession({
     userId: user.id,
     priceId: body.priceId,
     successUrl: body.successUrl,

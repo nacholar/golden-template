@@ -13,8 +13,9 @@ function getMockEnv() {
     BETTER_AUTH_URL: "http://localhost:8787",
     GITHUB_CLIENT_ID: "test_github_client_id",
     GITHUB_CLIENT_SECRET: "test_github_client_secret",
-    STRIPE_SECRET_KEY: "sk_test_fake",
-    STRIPE_WEBHOOK_SECRET: "whsec_test_fake",
+    LEMONSQUEEZY_API_KEY: "fake_ls_api_key",
+    LEMONSQUEEZY_STORE_ID: "fake_store_id",
+    LEMONSQUEEZY_WEBHOOK_SECRET: "fake_webhook_secret",
   };
 }
 
@@ -45,7 +46,7 @@ describe("openapi doc", () => {
     expect(paths).toContain("/api/api-keys/{id}");
     expect(paths).toContain("/api/subscriptions/me");
     expect(paths).toContain("/api/subscriptions/checkout");
-    expect(paths).toContain("/api/webhooks/stripe");
+    expect(paths).toContain("/api/webhooks/lemonsqueezy");
   });
 
   it("OpenAPI spec documents correct HTTP methods", async () => {
@@ -61,25 +62,25 @@ describe("openapi doc", () => {
     expect(json.paths["/api/api-keys/{id}"]).toHaveProperty("delete");
     expect(json.paths["/api/subscriptions/me"]).toHaveProperty("get");
     expect(json.paths["/api/subscriptions/checkout"]).toHaveProperty("post");
-    expect(json.paths["/api/webhooks/stripe"]).toHaveProperty("post");
+    expect(json.paths["/api/webhooks/lemonsqueezy"]).toHaveProperty("post");
   });
 });
 
 describe("webhooks routes", () => {
-  it("POST /api/webhooks/stripe returns 400 without stripe-signature header", async () => {
-    const res = await app.request("/api/webhooks/stripe", {
+  it("POST /api/webhooks/lemonsqueezy returns 400 without x-signature header", async () => {
+    const res = await app.request("/api/webhooks/lemonsqueezy", {
       method: "POST",
       body: "{}",
     }, getMockEnv());
     expect(res.status).toBe(400);
     const json = await res.json();
-    expect(json.message).toBe("Missing stripe-signature header");
+    expect(json.message).toBe("Missing x-signature header");
   });
 
-  it("POST /api/webhooks/stripe returns 400 with invalid signature", async () => {
-    const res = await app.request("/api/webhooks/stripe", {
+  it("POST /api/webhooks/lemonsqueezy returns 400 with invalid signature", async () => {
+    const res = await app.request("/api/webhooks/lemonsqueezy", {
       method: "POST",
-      headers: { "stripe-signature": "invalid_sig" },
+      headers: { "x-signature": "invalid_sig" },
       body: "{}",
     }, getMockEnv());
     expect(res.status).toBe(400);

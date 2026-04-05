@@ -12,9 +12,10 @@ const EnvSchema = z.object({
   BETTER_AUTH_URL: z.string().url(),
   GITHUB_CLIENT_ID: z.string(),
   GITHUB_CLIENT_SECRET: z.string(),
-  // Stripe
-  STRIPE_SECRET_KEY: z.string(),
-  STRIPE_WEBHOOK_SECRET: z.string(),
+  // LemonSqueezy
+  LEMONSQUEEZY_API_KEY: z.string(),
+  LEMONSQUEEZY_STORE_ID: z.string(),
+  LEMONSQUEEZY_WEBHOOK_SECRET: z.string(),
 });
 
 export type Environment = z.infer<typeof EnvSchema> & {

@@ -4,21 +4,25 @@ import * as HttpStatusCodes from "stoker/http-status-codes";
 
 import { createDb } from "@/db";
 import { subscriptions } from "@/db/schema";
-import { StripePaymentProvider } from "@/lib/payment/stripe";
+import { LemonSqueezyPaymentProvider } from "@/lib/payment/lemonsqueezy";
 import type { AppBindings } from "@/lib/types";
 
-export const stripeWebhook = async (c: Context<AppBindings>) => {
-  const signature = c.req.header("stripe-signature");
+export const lemonsqueezyWebhook = async (c: Context<AppBindings>) => {
+  const signature = c.req.header("x-signature");
   if (!signature) {
-    return c.json({ message: "Missing stripe-signature header" }, HttpStatusCodes.BAD_REQUEST);
+    return c.json({ message: "Missing x-signature header" }, HttpStatusCodes.BAD_REQUEST);
   }
 
   const body = await c.req.text();
-  const stripe = new StripePaymentProvider(c.env.STRIPE_SECRET_KEY, c.env.STRIPE_WEBHOOK_SECRET);
+  const provider = new LemonSqueezyPaymentProvider(
+    c.env.LEMONSQUEEZY_API_KEY,
+    c.env.LEMONSQUEEZY_STORE_ID,
+    c.env.LEMONSQUEEZY_WEBHOOK_SECRET,
+  );
 
   let event;
   try {
-    event = await stripe.verifyWebhookSignature(body, signature);
+    event = await provider.verifyWebhookSignature(body, signature);
   }
   catch {
     return c.json({ message: "Invalid webhook signature" }, HttpStatusCodes.BAD_REQUEST);
@@ -37,6 +41,7 @@ export const stripeWebhook = async (c: Context<AppBindings>) => {
           .set({
             tier: event.tier,
             status: event.status,
+            paymentProvider: "lemonsqueezy",
             externalSubscriptionId: event.subscriptionId,
             currentPeriodStart: event.currentPeriodStart,
             currentPeriodEnd: event.currentPeriodEnd,

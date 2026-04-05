@@ -5,7 +5,7 @@ import auth from "@/routes/auth/auth.index";
 import index from "@/routes/index.route";
 import subscriptions from "@/routes/subscriptions/subscriptions.index";
 import tasks from "@/routes/tasks/tasks.index";
-import stripeWebhooks from "@/routes/webhooks/stripe.index";
+import lemonsqueezyWebhooks from "@/routes/webhooks/lemonsqueezy.index";
 
 const app = createApp();
 
@@ -17,7 +17,7 @@ const routes = [
   tasks,
   apiKeys,
   subscriptions,
-  stripeWebhooks,
+  lemonsqueezyWebhooks,
 ] as const;
 
 routes.forEach((route) => {

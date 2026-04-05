@@ -80,7 +80,7 @@ export const subscriptions = sqliteTable("subscriptions", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   tier: text("tier", { enum: ["free", "pro", "enterprise"] }).notNull().default("free"),
-  paymentProvider: text("payment_provider", { enum: ["stripe", "fintoc", "mercadopago"] }),
+  paymentProvider: text("payment_provider", { enum: ["lemonsqueezy", "fintoc", "mercadopago"] }),
   externalSubscriptionId: text("external_subscription_id"),
   externalCustomerId: text("external_customer_id"),
   status: text("status", { enum: ["active", "cancelled", "past_due", "trialing"] }).notNull().default("active"),

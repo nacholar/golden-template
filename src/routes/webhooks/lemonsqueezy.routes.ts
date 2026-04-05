@@ -4,8 +4,8 @@ import { jsonContent } from "stoker/openapi/helpers";
 
 const tags = ["Webhooks"];
 
-export const stripeWebhook = createRoute({
-  path: "/api/webhooks/stripe",
+export const lemonsqueezyWebhook = createRoute({
+  path: "/api/webhooks/lemonsqueezy",
   method: "post",
   tags,
   responses: {
@@ -20,4 +20,4 @@ export const stripeWebhook = createRoute({
   },
 });
 
-export type StripeWebhookRoute = typeof stripeWebhook;
+export type LemonSqueezyWebhookRoute = typeof lemonsqueezyWebhook;
