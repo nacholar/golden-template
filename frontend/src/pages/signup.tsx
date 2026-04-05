@@ -42,39 +42,45 @@ export default function SignupPage() {
       <div className="bg-slate-900 rounded-xl border border-slate-700 p-8">
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <p className="text-red-400 text-xs">{error}</p>
+            <p className="text-red-400 text-xs" role="alert">{error}</p>
           )}
           <div>
-            <label className="text-sm text-slate-200 block mb-1.5">Name</label>
+            <label htmlFor="signup-name" className="text-sm text-slate-200 block mb-1.5">Name</label>
             <Input
+              id="signup-name"
               type="text"
               placeholder="Your name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="bg-slate-950 border-slate-700 text-white placeholder-slate-500"
               required
+              autoComplete="name"
             />
           </div>
           <div>
-            <label className="text-sm text-slate-200 block mb-1.5">Email</label>
+            <label htmlFor="signup-email" className="text-sm text-slate-200 block mb-1.5">Email</label>
             <Input
+              id="signup-email"
               type="email"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="bg-slate-950 border-slate-700 text-white placeholder-slate-500"
               required
+              autoComplete="email"
             />
           </div>
           <div>
-            <label className="text-sm text-slate-200 block mb-1.5">Password</label>
+            <label htmlFor="signup-password" className="text-sm text-slate-200 block mb-1.5">Password</label>
             <Input
+              id="signup-password"
               type="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="bg-slate-950 border-slate-700 text-white placeholder-slate-500"
               required
+              autoComplete="new-password"
             />
           </div>
           <Button

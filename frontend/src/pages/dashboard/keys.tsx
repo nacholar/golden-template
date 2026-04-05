@@ -90,7 +90,7 @@ export default function KeysPage() {
       </div>
 
       {(error || actionError) && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6 text-red-400 text-sm">
+        <div role="alert" className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6 text-red-400 text-sm">
           {actionError || error}
         </div>
       )}
@@ -168,10 +168,11 @@ export default function KeysPage() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <label className="text-sm text-slate-200 block mb-1.5">
+              <label htmlFor="new-key-name" className="text-sm text-slate-200 block mb-1.5">
                 Key Name
               </label>
               <Input
+                id="new-key-name"
                 placeholder="e.g., Production"
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}

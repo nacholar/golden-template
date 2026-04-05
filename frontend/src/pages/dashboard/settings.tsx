@@ -50,16 +50,19 @@ export default function SettingsPage() {
             </Avatar>
           </div>
           <div>
-            <label className="text-sm text-slate-200 block mb-1.5">Name</label>
+            <label htmlFor="settings-name" className="text-sm text-slate-200 block mb-1.5">Name</label>
             <Input
+              id="settings-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="bg-slate-950 border-slate-700 text-white max-w-md"
+              autoComplete="name"
             />
           </div>
           <div>
-            <label className="text-sm text-slate-200 block mb-1.5">Email</label>
+            <label htmlFor="settings-email" className="text-sm text-slate-200 block mb-1.5">Email</label>
             <Input
+              id="settings-email"
               value={user?.email ?? ""}
               disabled
               className="bg-slate-950 border-slate-700 text-slate-400 max-w-md"

@@ -9,8 +9,9 @@ export function DashboardLayout() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-slate-400">Loading...</div>
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center" role="status">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700 border-t-emerald-500" />
+        <span className="sr-only">Loading dashboard...</span>
       </div>
     );
   }
@@ -31,7 +32,7 @@ export function DashboardLayout() {
       {/* Mobile sidebar */}
       <Sheet>
         <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-16 bg-slate-900 border-b border-slate-700 flex items-center px-4">
-          <SheetTrigger className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-colors">
+          <SheetTrigger aria-label="Open navigation menu" className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-colors">
             <Menu className="w-5 h-5" />
           </SheetTrigger>
         </div>
@@ -41,7 +42,7 @@ export function DashboardLayout() {
       </Sheet>
 
       {/* Main content */}
-      <main className="flex-1 min-w-0">
+      <main id="main-content" className="flex-1 min-w-0">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-8 mt-16 lg:mt-0">
           <Outlet />
         </div>

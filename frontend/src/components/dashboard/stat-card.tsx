@@ -1,18 +1,22 @@
 import { Link } from "react-router-dom";
 
+type BadgeVariant = "emerald" | "sky" | "default";
+
+interface StatCardProps {
+  label: string;
+  value: string;
+  icon: React.ElementType;
+  badge?: { text: string; variant: BadgeVariant };
+  action?: { label: string; href: string };
+}
+
 export function StatCard({
   label,
   value,
   icon: Icon,
   badge,
   action,
-}: {
-  label: string;
-  value: string;
-  icon: React.ElementType;
-  badge?: { text: string; variant: string };
-  action?: { label: string; href: string };
-}) {
+}: StatCardProps) {
   return (
     <div className="bg-slate-900 rounded-xl border border-slate-700 p-6">
       <div className="flex items-center justify-between mb-4">

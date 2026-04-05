@@ -24,7 +24,7 @@ export default function OverviewPage() {
       <PageHeader title="Overview" />
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6 text-red-400 text-sm">
+        <div role="alert" className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6 text-red-400 text-sm">
           {error}
         </div>
       )}

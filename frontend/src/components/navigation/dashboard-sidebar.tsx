@@ -29,6 +29,7 @@ export function DashboardSidebar({ className }: { className?: string }) {
 
   return (
     <nav
+      aria-label="Dashboard navigation"
       className={cn(
         "flex flex-col h-full bg-slate-950 border-r border-slate-700",
         className
@@ -91,6 +92,7 @@ export function DashboardSidebar({ className }: { className?: string }) {
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Sign out"
               className="text-slate-400 hover:text-white h-8 w-8"
               onClick={() => logout()}
             >

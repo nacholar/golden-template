@@ -23,6 +23,7 @@ export function CodeWindow({ code }: { code: string }) {
         <Button
           variant="ghost"
           size="icon"
+          aria-label={copied ? "Copied" : "Copy to clipboard"}
           className="h-6 w-6 text-slate-400 hover:text-white"
           onClick={handleCopy}
         >
