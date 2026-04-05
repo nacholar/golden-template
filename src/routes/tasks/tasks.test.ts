@@ -26,6 +26,11 @@ describe("index route", () => {
     const json = await res.json();
     expect(json.message).toBe("Golden Template API on Cloudflare");
   });
+
+  it("GET / returns JSON content-type", async () => {
+    const res = await app.request("/", undefined, getMockEnv());
+    expect(res.headers.get("content-type")).toContain("application/json");
+  });
 });
 
 describe("openapi doc", () => {
@@ -64,6 +69,91 @@ describe("openapi doc", () => {
     expect(json.paths["/api/subscriptions/checkout"]).toHaveProperty("post");
     expect(json.paths["/api/webhooks/lemonsqueezy"]).toHaveProperty("post");
   });
+
+  it("OpenAPI spec includes security schemes for protected endpoints", async () => {
+    const res = await app.request("/doc", undefined, getMockEnv());
+    const json = await res.json();
+    // API Keys endpoints should have security
+    const apiKeysGet = json.paths["/api/api-keys"]?.get;
+    expect(apiKeysGet?.security).toBeDefined();
+    const apiKeysPost = json.paths["/api/api-keys"]?.post;
+    expect(apiKeysPost?.security).toBeDefined();
+    // Subscriptions endpoints should have security
+    const subMe = json.paths["/api/subscriptions/me"]?.get;
+    expect(subMe?.security).toBeDefined();
+    const subCheckout = json.paths["/api/subscriptions/checkout"]?.post;
+    expect(subCheckout?.security).toBeDefined();
+  });
+});
+
+describe("tasks route validation", () => {
+  it("POST /tasks rejects empty body", async () => {
+    const res = await app.request("/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    }, getMockEnv());
+    expect(res.status).toBe(422);
+    const json = await res.json();
+    expect(json.success).toBe(false);
+  });
+
+  it("POST /tasks rejects missing name", async () => {
+    const res = await app.request("/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ done: false }),
+    }, getMockEnv());
+    expect(res.status).toBe(422);
+  });
+
+  it("POST /tasks rejects missing done field", async () => {
+    const res = await app.request("/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "test task" }),
+    }, getMockEnv());
+    expect(res.status).toBe(422);
+  });
+
+  it("POST /tasks rejects empty name", async () => {
+    const res = await app.request("/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "", done: false }),
+    }, getMockEnv());
+    expect(res.status).toBe(422);
+  });
+
+  it("POST /tasks rejects name exceeding 500 chars", async () => {
+    const res = await app.request("/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "a".repeat(501), done: false }),
+    }, getMockEnv());
+    expect(res.status).toBe(422);
+  });
+
+  it("GET /tasks/abc rejects non-numeric id", async () => {
+    const res = await app.request("/tasks/abc", undefined, getMockEnv());
+    expect(res.status).toBe(422);
+  });
+
+  it("PATCH /tasks/abc rejects non-numeric id", async () => {
+    const res = await app.request("/tasks/abc", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "updated" }),
+    }, getMockEnv());
+    expect(res.status).toBe(422);
+  });
+
+  it("DELETE /tasks/abc rejects non-numeric id", async () => {
+    const res = await app.request("/tasks/abc", {
+      method: "DELETE",
+    }, getMockEnv());
+    expect(res.status).toBe(422);
+  });
 });
 
 describe("webhooks routes", () => {
@@ -87,6 +177,16 @@ describe("webhooks routes", () => {
     const json = await res.json();
     expect(json.message).toBe("Invalid webhook signature");
   });
+
+  it("POST /api/webhooks/lemonsqueezy returns 400 with empty signature", async () => {
+    const res = await app.request("/api/webhooks/lemonsqueezy", {
+      method: "POST",
+      headers: { "x-signature": "" },
+      body: "{}",
+    }, getMockEnv());
+    // Empty string signature should still fail verification
+    expect(res.status).toBe(400);
+  });
 });
 
 describe("protected routes require auth", () => {
@@ -97,8 +197,51 @@ describe("protected routes require auth", () => {
     expect([401, 500]).toContain(res.status);
   });
 
+  it("POST /api/api-keys rejects unauthenticated requests", async () => {
+    const res = await app.request("/api/api-keys", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "test-key" }),
+    }, getMockEnv());
+    expect([401, 500]).toContain(res.status);
+  });
+
+  it("DELETE /api/api-keys/1 rejects unauthenticated requests", async () => {
+    const res = await app.request("/api/api-keys/1", {
+      method: "DELETE",
+    }, getMockEnv());
+    expect([401, 500]).toContain(res.status);
+  });
+
   it("GET /api/subscriptions/me rejects unauthenticated requests", async () => {
     const res = await app.request("/api/subscriptions/me", undefined, getMockEnv());
     expect([401, 500]).toContain(res.status);
+  });
+
+  it("POST /api/subscriptions/checkout rejects unauthenticated requests", async () => {
+    const res = await app.request("/api/subscriptions/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        priceId: "price_123",
+        successUrl: "https://example.com/success",
+        cancelUrl: "https://example.com/cancel",
+      }),
+    }, getMockEnv());
+    expect([401, 500]).toContain(res.status);
+  });
+});
+
+describe("not found handling", () => {
+  it("returns 404 for unknown routes", async () => {
+    const res = await app.request("/nonexistent", undefined, getMockEnv());
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 for wrong HTTP methods on known routes", async () => {
+    const res = await app.request("/tasks", {
+      method: "PUT",
+    }, getMockEnv());
+    expect(res.status).toBe(404);
   });
 });
