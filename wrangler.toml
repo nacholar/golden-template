@@ -1,0 +1,10 @@
+name = "golden-template-api"
+main = "src/app.ts"
+compatibility_date = "2024-09-25"
+compatibility_flags = [ "nodejs_compat" ]
+keep_vars = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "golden-template-db"
+database_id = "local"
